@@ -101,13 +101,19 @@ class InboundBean:
         enabled: bool
         destOverride: list[str]  # str
         metadataOnly: bool
+        routeOnly: bool
 
         def __init__(
-            self, enabled: bool, destOverride: list[str], metadataOnly: bool
+            self,
+            enabled: bool,
+            destOverride: list[str],
+            metadataOnly: bool,
+            routeOnly: bool = None,
         ) -> None:
             self.enabled = enabled
             self.destOverride = destOverride
             self.metadataOnly = metadataOnly
+            self.routeOnly = routeOnly
 
     class InSettingsBean:
         auth: str = None
@@ -169,17 +175,17 @@ class OutboundBean:
             class UsersBean:
                 id: str = ""
                 alterId: int = None
-                security: str = DEFAULT_SECURITY
-                level: int = DEFAULT_LEVEL
+                security: str = None
+                level: int = None
                 encryption: str = ""
-                flow: str = ""
+                flow: str = None
 
                 def __init__(
                     self,
                     id: str = "",
                     alterId: int = None,
-                    security: str = DEFAULT_SECURITY,
-                    level: int = DEFAULT_LEVEL,
+                    security: str = None,
+                    level: int = None,
                     encryption: str = "",
                     flow: str = "",
                 ) -> None:
@@ -272,6 +278,18 @@ class OutboundBean:
                 self.publicKey = publicKey
                 self.endpoint = endpoint
 
+        class FragmentBean:
+            interval: str
+            length: str
+            packets: str
+
+            def __init__(
+                self, interval: str, length: str, packets: str
+            ) -> None:
+                self.interval = interval
+                self.length = length
+                self.packets = packets
+
         vnext: list[VnextBean] = None  # VnextBean
         servers: list[ServersBean] = None  # ServersBean
         response: Response = None
@@ -284,6 +302,7 @@ class OutboundBean:
         inboundTag: str = None
         secretKey: str = None
         peers: list[WireGuardBean] = None  # WireGuardBean
+        fragment: FragmentBean = None  # FragmentBean
 
         def __init__(
             self,
@@ -299,6 +318,7 @@ class OutboundBean:
             inboundTag: str = None,
             secretKey: str = None,
             peers: list[WireGuardBean] = None,
+            fragment: FragmentBean = None,
         ) -> None:
             self.vnext = vnext
             self.servers = servers
@@ -312,6 +332,7 @@ class OutboundBean:
             self.inboundTag = inboundTag
             self.secretKey = secretKey
             self.peers = peers
+            self.fragment = fragment
 
     class StreamSettingsBean:
         class TcpSettingsBean:
@@ -417,14 +438,8 @@ class OutboundBean:
                 self.seed = seed
 
         class WsSettingsBean:
-            class HeadersBean:
-                Host: str = ""
-
-                def __init__(self, Host: str = "") -> None:
-                    self.Host = Host
-
             path: str = ""
-            headers: HeadersBean = HeadersBean()
+            host: str = ""
             maxEarlyData: int = None
             useBrowserForwarding: bool = None
             acceptProxyProtocol: bool = None
@@ -432,13 +447,13 @@ class OutboundBean:
             def __init__(
                 self,
                 path: str = "",
-                headers: HeadersBean = HeadersBean(),
+                host: str = "",
                 maxEarlyData: int = None,
                 useBrowserForwarding: bool = None,
                 acceptProxyProtocol: bool = None,
             ) -> None:
                 self.path = path
-                self.headers = headers
+                self.host = host
                 self.maxEarlyData = maxEarlyData
                 self.useBrowserForwarding = useBrowserForwarding
                 self.acceptProxyProtocol = acceptProxyProtocol
@@ -452,7 +467,7 @@ class OutboundBean:
                 self.path = path
 
         class TlsSettingsBean:
-            allowInsecure: bool = False
+            allowInsecure: bool = None
             serverName: str = ""
             alpn: list[str] = None  # str
             minVersion: str = None
@@ -463,14 +478,14 @@ class OutboundBean:
             certificates: list[any] = None  # any
             disableSystemRoot: bool = None
             enableSessionResumption: bool = None
-            show: bool = False
+            show: bool = None
             publicKey: str = None
             shortId: str = None
             spiderX: str = None
 
             def __init__(
                 self,
-                allowInsecure: bool = False,
+                allowInsecure: bool = None,
                 serverName: str = "",
                 alpn: list[str] = None,
                 minVersion: str = None,
@@ -481,7 +496,7 @@ class OutboundBean:
                 certificates: list[any] = None,
                 disableSystemRoot: bool = None,
                 enableSessionResumption: bool = None,
-                show: bool = False,
+                show: bool = None,
                 publicKey: str = None,
                 shortId: str = None,
                 spiderX: str = None,
@@ -533,6 +548,16 @@ class OutboundBean:
                 self.serviceName = serviceName
                 self.multiMode = multiMode
 
+        class SocktOptSettingsBean:
+            dialerProxy: str = None
+            tcpNoDelay: bool = None
+
+            def __init__(
+                self, dialerProxy: str = None, tcpNoDelay: bool = None
+            ) -> None:
+                self.dialerProxy = dialerProxy
+                self.tcpNoDelay = tcpNoDelay
+
         network: str = DEFAULT_NETWORK
         security: str = ""
         tcpSettings: TcpSettingsBean = None
@@ -544,7 +569,7 @@ class OutboundBean:
         realitySettings: TlsSettingsBean = None
         grpcSettings: GrpcSettingsBean = None
         dsSettings: any = None
-        sockopt: any = None
+        sockopt: SocktOptSettingsBean = None
 
         def __init__(
             self,
@@ -559,7 +584,7 @@ class OutboundBean:
             realitySettings: TlsSettingsBean = None,
             grpcSettings: GrpcSettingsBean = None,
             dsSettings: any = None,
-            sockopt: any = None,
+            sockopt: SocktOptSettingsBean = None,
         ) -> None:
             self.network = network
             self.security = security
@@ -573,6 +598,13 @@ class OutboundBean:
             self.grpcSettings = grpcSettings
             self.dsSettings = dsSettings
             self.sockopt = sockopt
+
+        def populateFragmentSettings(
+            self, fragment_tag: str = "fragment"
+        ) -> None:
+            self.sockopt = self.SocktOptSettingsBean(
+                dialerProxy=fragment_tag, tcpNoDelay=None
+            )
 
         def populateTransportSettings(
             self,
@@ -626,8 +658,8 @@ class OutboundBean:
 
             elif self.network == "ws":
                 wssetting = self.WsSettingsBean()
-                wssetting.headers.Host = host if host != None else ""
-                sni = wssetting.headers.Host
+                wssetting.host = host if host != None else ""
+                sni = wssetting.host
                 wssetting.path = path if path != None else "/"
                 self.wsSettings = wssetting
 
@@ -1014,19 +1046,19 @@ def get_log():
 
 def get_inbound():
     inbound = InboundBean(
-        tag="in_proxy",
-        port=1080,
+        tag="socks",
+        port=10808,
         protocol=EConfigType.SOCKS.protocolName,
         listen="127.0.0.1",
         settings=InboundBean.InSettingsBean(
             auth="noauth",
             udp=True,
-            userLevel=8,
         ),
         sniffing=InboundBean.SniffingBean(
             enabled=False,
-            destOverride=None,
+            destOverride=["http", "tls", "quic", "fakedns"],
             metadataOnly=None,
+            routeOnly=True,
         ),
         streamSettings=None,
         allocate=None,
@@ -1138,6 +1170,33 @@ def get_outbound2():
         mux=None,
     )
     return outbound2
+
+
+def get_fragment_outbound(
+    *,
+    interval: str,
+    length: str,
+    packets: str,
+    tag: str = "fragment",
+) -> OutboundBean:
+    return OutboundBean(
+        tag=tag,
+        protocol=EConfigType.FREEDOM.protocolName,
+        mux=None,
+        streamSettings=OutboundBean.StreamSettingsBean(
+            security=None,
+            network=None,
+            sockopt=OutboundBean.StreamSettingsBean.SocktOptSettingsBean(
+                tcpNoDelay=True
+            ),
+        ),
+        settings=OutboundBean.OutSettingsBean(
+            fragment=OutboundBean.OutSettingsBean.FragmentBean(
+                interval=interval, packets=packets, length=length
+            )
+        ),
+    )
+    pass
 
 
 def get_dns(dns_list=["8.8.8.8"]):
@@ -1267,9 +1326,12 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
             for k, v in parse_qs(parsed_url.query).items()
         )
 
+        fragment_config = netquery.get("fragment", None)
         outbound = get_outbound_vless()
 
-        streamSetting = outbound.streamSettings
+        streamSetting: OutboundBean.StreamSettingsBean = (
+            outbound.streamSettings
+        )
         fingerprint = (
             netquery.get("fp")
             if "fp" in netquery
@@ -1287,7 +1349,7 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
         user = vnext.users[0]
         user.id = uid
         user.encryption = netquery.get("encryption", "none")
-        user.flow = netquery.get("flow", "")
+        user.flow = netquery.get("flow", None)
 
         sni = streamSetting.populateTransportSettings(
             transport=netquery.get("type", "tcp"),
@@ -1301,7 +1363,7 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
             serviceName=netquery.get("serviceName", None),
         )
         streamSetting.populateTlsSettings(
-            streamSecurity=netquery.get("security", ""),
+            streamSecurity=netquery.get("security", None),
             allowInsecure=allowInsecure,
             sni=(
                 sni
@@ -1310,16 +1372,25 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
             ),
             fingerprint=fingerprint,
             alpns=netquery.get("alpn", None),
-            publicKey=netquery.get("pbk", ""),
-            shortId=netquery.get("sid", ""),
-            spiderX=netquery.get("spx", ""),
+            publicKey=netquery.get("pbk", None),
+            shortId=netquery.get("sid", None),
+            spiderX=netquery.get("spx", None),
         )
+        outbounds = [outbound, get_outbound1(), get_outbound2()]
+        if fragment_config is not None:
+            streamSetting.populateFragmentSettings()
+            length, inteval, packets = fragment_config.split(",")
+            outbounds.append(
+                get_fragment_outbound(
+                    interval=inteval, length=length, packets=packets
+                )
+            )
 
         v2rayConfig = V2rayConfig(
             _comment=Comment(remark=name),
             log=get_log(),
             inbounds=[get_inbound()],
-            outbounds=[outbound, get_outbound1(), get_outbound2()],
+            outbounds=outbounds,
             dns=get_dns(dns_list=dns_list),
             routing=get_routing(),
         )
@@ -1475,7 +1546,7 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
         res = json.loads(v2rayConfig_str_json)
         res = remove_nulls(res)
 
-        return json.dumps(res)
+        return res
 
 
 if __name__ == "__main__":
