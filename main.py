@@ -4,10 +4,11 @@ import json
 import dotenv
 import logging
 import docker.models.containers
-import message
-import requests
 import docker
+import requests
+import message
 import v2ray2json
+import metrics
 
 # Configure the logger
 logging.basicConfig(
@@ -19,6 +20,7 @@ logging.basicConfig(
 dotenv.load_dotenv(dotenv_path="./.env")
 CONFIG_URL: str = os.getenv("CONFIG_URL")
 TEST_URL: str = os.getenv("TEST_URL")
+NETWORK: str = os.getenv("NETWORK")
 
 docker_client = docker.from_env()
 
@@ -76,7 +78,14 @@ def main() -> None:
                     "https": "socks5h://localhost:10808",
                 },
             ).text
+
+            metrics.CONFIG_STATUS_GAUGE.labels(
+                network=NETWORK, config_name=config_dict["_comment"]["remark"]
+            ).set(1)
         except requests.exceptions.Timeout:
+            metrics.CONFIG_STATUS_GAUGE.labels(
+                network=NETWORK, config_name=config_dict["_comment"]["remark"]
+            ).set(0)
             message.send_email_smtp(
                 subject="Config not work", body=f"config={config}"
             )

@@ -18,6 +18,8 @@ docker==7.1.0
     # via config-checker
 idna==3.10
     # via requests
+prometheus-client==0.21.1
+    # via config-checker
 pysocks==1.7.1
     # via requests
 python-dotenv==1.0.1
