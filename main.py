@@ -21,6 +21,7 @@ dotenv.load_dotenv(dotenv_path="./.env")
 CONFIG_URL: str = os.getenv("CONFIG_URL")
 TEST_URL: str = os.getenv("TEST_URL")
 NETWORK: str = os.getenv("NETWORK")
+LOOP_DELAY_SECONDS: int = int(os.getenv("LOOP_DELAY_SECONDS"))
 
 docker_client = docker.from_env()
 
@@ -29,7 +30,7 @@ def is_subscription(config: str) -> bool:
     return config.split("://")[0] in ["http", "https"]
 
 
-def main() -> None:
+def main_loop() -> None:
     # Init configs url
     configs: list[str]
 
@@ -87,18 +88,25 @@ def main() -> None:
                 network=NETWORK, config_name=config_dict["_comment"]["remark"]
             ).set(0)
             message.send_email_smtp(
-                subject="Config not work", body=f"config={config}"
+                subject=f"Config not work in {NETWORK}",
+                body=f"config={config}",
             )
             message.send_telegram_message(
-                message=f"Config not work.\n{config}"
+                message=f"Config not work in {NETWORK}.\n{config}"
             )
-            logging.warning(f"Not work config: {config}")
+            logging.warning(f"Not work config in {NETWORK}: {config}")
         except Exception:
             pass
         finally:
             if container is not None:
                 container.stop()
                 container.remove()
+
+
+def main() -> None:
+    while True:
+        main_loop()
+        time.sleep(LOOP_DELAY_SECONDS)
 
 
 if __name__ == "__main__":

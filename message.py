@@ -28,7 +28,7 @@ def send_telegram_message(message: str) -> bool:
             f"{TELEGRAM_BOT_URL}bot{TELEGRAM_BOT_TOKEN}/sendMessage",
             data={
                 "chat_id": TELEGRAM_BOT_CHAT_ID,
-                "message": message,
+                "text": message,
                 "parse_mode": "HTML",
             },
         )
@@ -55,7 +55,9 @@ def send_email_smtp(subject: str, body: str) -> False:
     message.attach(MIMEText(body, "plain"))
 
     try:
-        with smtplib.SMTP_SSL(EMAIL_SMTP_SERVER, EMAIL_SMTP_PORT) as server:
+        with smtplib.SMTP_SSL(
+            EMAIL_SMTP_SERVER, int(EMAIL_SMTP_PORT)
+        ) as server:
             server.login(EMAIL_SMTP_USERNAME, EMAIL_SMTP_PASSWORD)
             server.sendmail(EMAIL_FROM, EMAIL_TO, message.as_string())
         return True
