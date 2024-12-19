@@ -1049,7 +1049,7 @@ def get_inbound():
         tag="socks",
         port=10808,
         protocol=EConfigType.SOCKS.protocolName,
-        listen="127.0.0.1",
+        listen="0.0.0.0",
         settings=InboundBean.InSettingsBean(
             auth="noauth",
             udp=True,

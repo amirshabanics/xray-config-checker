@@ -16,6 +16,9 @@ logging.basicConfig(
 )
 
 dotenv.load_dotenv(dotenv_path="./.env")
+CONFIG_URL: str = os.getenv("CONFIG_URL")
+TEST_URL: str = os.getenv("TEST_URL")
+
 docker_client = docker.from_env()
 
 
@@ -25,18 +28,18 @@ def is_subscription(config: str) -> bool:
 
 def main() -> None:
     # Init configs url
-    config_url: str = os.getenv("CONFIG_URL")
     configs: list[str]
 
-    if is_subscription(config=config_url):
-        configs = requests.get(config_url).text.splitlines()
+    if is_subscription(config=CONFIG_URL):
+        configs = requests.get(CONFIG_URL).text.splitlines()
     else:
-        configs = [config_url]
+        configs = [CONFIG_URL]
     logging.info("Load configs successfully.")
 
     # Init docker image
     logging.info("Build docker image...")
     image, _ = docker_client.images.build(path=".", tag="gfw-xray-core")
+    container: docker.models.containers.Container = None
     for config in configs:
         logging.info(f"Generate config for:{config}")
         config_dict = v2ray2json.generateConfig(config=config)
@@ -44,9 +47,9 @@ def main() -> None:
         with open("./configs/config.json", "w") as file:
             json.dump(config_dict, file, sort_keys=True, indent=2)
 
-        logging.info("Run xray core with the config....")
-        container: docker.models.containers.Container = (
-            docker_client.containers.run(
+        try:
+            logging.info("Run xray core with the config....")
+            container = docker_client.containers.run(
                 image=image,
                 detach=True,
                 volumes={
@@ -57,25 +60,30 @@ def main() -> None:
                 },
                 ports={"10808": "10808"},
             )
-        )
 
-        # Ensure xray is running.
-        time.sleep(1)
+            # Ensure xray is running.
+            time.sleep(1)
 
-        # Check connection.
-        logging.info("Try to request...")
-        logging.info(
+            # Check connection.
+            logging.info("Try to request...")
             requests.get(
-                url="https://ifconfig.me",
-                proxy={
+                timeout=10,
+                url=TEST_URL,
+                proxies={
                     "http": "socks5h://localhost:10808",
                     "https": "socks5h://localhost:10808",
                 },
             ).text
-        )
-
-        container.stop()
-        container.remove()
+            # TODO handle sending success metric
+        except requests.exceptions.Timeout:
+            # TODO handle sending notif or metric
+            logging.warning(f"Not work config: {config}")
+        except Exception:
+            pass
+        finally:
+            if container is not None:
+                container.stop()
+                container.remove()
 
 
 if __name__ == "__main__":
