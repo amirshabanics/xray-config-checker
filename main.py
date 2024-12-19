@@ -4,6 +4,7 @@ import json
 import dotenv
 import logging
 import docker.models.containers
+import message
 import requests
 import docker
 import v2ray2json
@@ -40,6 +41,7 @@ def main() -> None:
     logging.info("Build docker image...")
     image, _ = docker_client.images.build(path=".", tag="gfw-xray-core")
     container: docker.models.containers.Container = None
+    # TODO: handle async for each config
     for config in configs:
         logging.info(f"Generate config for:{config}")
         config_dict = v2ray2json.generateConfig(config=config)
@@ -74,9 +76,13 @@ def main() -> None:
                     "https": "socks5h://localhost:10808",
                 },
             ).text
-            # TODO handle sending success metric
         except requests.exceptions.Timeout:
-            # TODO handle sending notif or metric
+            message.send_email_smtp(
+                subject="Config not work", body=f"config={config}"
+            )
+            message.send_telegram_message(
+                message=f"Config not work.\n{config}"
+            )
             logging.warning(f"Not work config: {config}")
         except Exception:
             pass
