@@ -10,3 +10,51 @@
 #   universal: false
 
 -e file:.
+asttokens==3.0.0
+    # via stack-data
+certifi==2024.12.14
+    # via requests
+charset-normalizer==3.4.0
+    # via requests
+decorator==5.1.1
+    # via ipython
+docker==7.1.0
+    # via config-checker
+executing==2.1.0
+    # via stack-data
+idna==3.10
+    # via requests
+ipython==8.30.0
+jedi==0.19.2
+    # via ipython
+matplotlib-inline==0.1.7
+    # via ipython
+parso==0.8.4
+    # via jedi
+pexpect==4.9.0
+    # via ipython
+prompt-toolkit==3.0.48
+    # via ipython
+ptyprocess==0.7.0
+    # via pexpect
+pure-eval==0.2.3
+    # via stack-data
+pygments==2.18.0
+    # via ipython
+pysocks==1.7.1
+    # via requests
+python-dotenv==1.0.1
+    # via config-checker
+requests==2.32.3
+    # via config-checker
+    # via docker
+stack-data==0.6.3
+    # via ipython
+traitlets==5.14.3
+    # via ipython
+    # via matplotlib-inline
+urllib3==2.2.3
+    # via docker
+    # via requests
+wcwidth==0.2.13
+    # via prompt-toolkit

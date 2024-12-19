@@ -1304,13 +1304,6 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
             routing=get_routing(),
         )
 
-        v2rayConfig_str_json = json.dumps(v2rayConfig, default=vars)
-
-        res = json.loads(v2rayConfig_str_json)
-        res = remove_nulls(res)
-
-        return json.dumps(res)
-
     elif protocol == EConfigType.VLESS.protocolName:
 
         parsed_url = urlparse(config)
@@ -1395,13 +1388,6 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
             routing=get_routing(),
         )
 
-        v2rayConfig_str_json = json.dumps(v2rayConfig, default=vars)
-
-        res = json.loads(v2rayConfig_str_json)
-        res = remove_nulls(res)
-
-        return json.dumps(res)
-
     elif protocol == EConfigType.TROJAN.protocolName:
 
         parsed_url = urlparse(config)
@@ -1485,13 +1471,6 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
             routing=get_routing(),
         )
 
-        v2rayConfig_str_json = json.dumps(v2rayConfig, default=vars)
-
-        res = json.loads(v2rayConfig_str_json)
-        res = remove_nulls(res)
-
-        return json.dumps(res)
-
     elif protocol == EConfigType.SHADOWSOCKS.protocolName:
         outbound = get_outbound_ss()
         if not try_resolve_resolve_sip002(raw_config, outbound):
@@ -1541,12 +1520,12 @@ def generateConfig(config: str, dns_list=["8.8.8.8"]):
                 routing=get_routing(),
             )
 
-            v2rayConfig_str_json = json.dumps(v2rayConfig, default=vars)
+    v2rayConfig_str_json = json.dumps(v2rayConfig, default=vars)
 
-        res = json.loads(v2rayConfig_str_json)
-        res = remove_nulls(res)
+    res = json.loads(v2rayConfig_str_json)
+    res = remove_nulls(res)
 
-        return res
+    return res
 
 
 if __name__ == "__main__":

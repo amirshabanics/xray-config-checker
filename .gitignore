@@ -8,3 +8,7 @@ wheels/
 
 # venv
 .venv
+.env
+xray
+xray.zip
+.DS_Store

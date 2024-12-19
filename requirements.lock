@@ -10,3 +10,21 @@
 #   universal: false
 
 -e file:.
+certifi==2024.12.14
+    # via requests
+charset-normalizer==3.4.0
+    # via requests
+docker==7.1.0
+    # via config-checker
+idna==3.10
+    # via requests
+pysocks==1.7.1
+    # via requests
+python-dotenv==1.0.1
+    # via config-checker
+requests==2.32.3
+    # via config-checker
+    # via docker
+urllib3==2.2.3
+    # via docker
+    # via requests
