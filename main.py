@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import docker.models.images
 import dotenv
 import logging
 import docker.models.containers
@@ -31,6 +32,56 @@ def is_subscription(config: str) -> bool:
     return config.split("://")[0] in ["http", "https"]
 
 
+def check_config(config: str, image: docker.models.images.Image) -> bool:
+    logging.info(f"Generate config for:{config}")
+    config_dict = v2ray2json.generateConfig(config=config)
+
+    with open("./configs/config.json", "w") as file:
+        json.dump(config_dict, file, sort_keys=True, indent=2)
+
+    container: docker.models.containers.Container = None
+    try:
+        logging.info("Run xray core with the config....")
+        container = docker_client.containers.run(
+            image=image,
+            detach=True,
+            volumes={
+                os.path.abspath("./configs"): {
+                    "mode": "rw",
+                    "bind": "/app/configs/",
+                }
+            },
+            ports={"10808": "10808"},
+        )
+
+        # Ensure xray is running.
+        time.sleep(1)
+
+        # Check connection.
+        logging.info("Try to request...")
+        requests.get(
+            timeout=10,
+            url=TEST_URL,
+            proxies={
+                "http": "socks5h://localhost:10808",
+                "https": "socks5h://localhost:10808",
+            },
+        ).text
+        return True
+    except requests.exceptions.Timeout:
+        return False
+    except Exception as e:
+        logging.error(e)
+        return False
+    finally:
+        if container is not None:
+            container.stop()
+            container.remove()
+
+
+BAD_CONFIGS: dict[str, bool] = dict()
+
+
 def main_loop() -> None:
     # Init configs url
     configs: list[str]
@@ -44,50 +95,18 @@ def main_loop() -> None:
     # Init docker image
     logging.info("Build docker image...")
     image, _ = docker_client.images.build(path=".", tag="gfw-xray-core")
-    container: docker.models.containers.Container = None
+
     # TODO: handle async for each config
     for config in configs:
-        logging.info(f"Generate config for:{config}")
         config_dict = v2ray2json.generateConfig(config=config)
+        config_name = config_dict.get("_comment", {}).get("remark", config)
+        is_connect = check_config(config=config, image=image)
+        metrics.CONFIG_STATUS_GAUGE.labels(
+            network=NETWORK, config_name=config_name
+        ).set(int(is_connect))
 
-        with open("./configs/config.json", "w") as file:
-            json.dump(config_dict, file, sort_keys=True, indent=2)
-
-        try:
-            logging.info("Run xray core with the config....")
-            container = docker_client.containers.run(
-                image=image,
-                detach=True,
-                volumes={
-                    os.path.abspath("./configs"): {
-                        "mode": "rw",
-                        "bind": "/app/configs/",
-                    }
-                },
-                ports={"10808": "10808"},
-            )
-
-            # Ensure xray is running.
-            time.sleep(1)
-
-            # Check connection.
-            logging.info("Try to request...")
-            requests.get(
-                timeout=10,
-                url=TEST_URL,
-                proxies={
-                    "http": "socks5h://localhost:10808",
-                    "https": "socks5h://localhost:10808",
-                },
-            ).text
-
-            metrics.CONFIG_STATUS_GAUGE.labels(
-                network=NETWORK, config_name=config_dict["_comment"]["remark"]
-            ).set(1)
-        except requests.exceptions.Timeout:
-            metrics.CONFIG_STATUS_GAUGE.labels(
-                network=NETWORK, config_name=config_dict["_comment"]["remark"]
-            ).set(0)
+        if is_connect is False and BAD_CONFIGS.get(config_name, False) is False:
+            BAD_CONFIGS[config_name] = True
             message.send_email_smtp(
                 subject=f"Config not work in {NETWORK}",
                 body=f"config={config}",
@@ -96,12 +115,9 @@ def main_loop() -> None:
                 message=f"Config not work in {NETWORK}.\n{config}"
             )
             logging.warning(f"Not work config in {NETWORK}: {config}")
-        except Exception:
-            pass
-        finally:
-            if container is not None:
-                container.stop()
-                container.remove()
+
+        if is_connect is True:
+            BAD_CONFIGS[config_name] = False
 
 
 def main() -> None:

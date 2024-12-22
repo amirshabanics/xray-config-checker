@@ -1,9 +1,12 @@
 import os
 import utils
 import requests
+import dotenv
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+dotenv.load_dotenv(dotenv_path="./.env")
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", default=None)
 TELEGRAM_BOT_URL = os.getenv(

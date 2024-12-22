@@ -1,5 +1,8 @@
 import prometheus_client
+import dotenv
 import os
+
+dotenv.load_dotenv(dotenv_path="./.env")
 
 """
 network: MCI, IRANCIL, Zitel, ...
