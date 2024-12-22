@@ -23,6 +23,7 @@ TEST_URL: str = os.getenv("TEST_URL")
 NETWORK: str = os.getenv("NETWORK")
 LOOP_DELAY_SECONDS: int = int(os.getenv("LOOP_DELAY_SECONDS"))
 
+metrics.setup()
 docker_client = docker.from_env()
 
 
